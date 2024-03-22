@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Calculadora de distancia</title>
+		<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+		<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+	</head>
+	<body>
+		<div class="container">
+			<img src="https://canal.ugr.es/wp-content/uploads/2018/02/osl_logo.png" alt="Logo" class="logo">
+			<h1>Calculadora de distancia</h1>
+			<form id="formulario">
+				<div class="input-group">
+					<label for="ciudad">Origen:</label>
+					<input type="text" id="ciudad" name="ciudad" value="Granada">
+				</div>
+				<div class="input-group">
+					<label for="otro">Destino:</label>
+					<input type="text" id="otro" name="otro" required title="Rellena este campo">
+				</div>
+				<button type="button" id="calcular">Calcular distancia</button>
+				<div id="mensaje"></div>
+			</form>
+			<div id="nota">*NOTA: si la ciudad no es la esperada, pruebe a ser más preciso (indique el país, escriba el nombre en inglés, etc)</div>
+			<div id="map"></div>
+		</div>
+
+		<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+		<script>
+			var map = L.map('map').setView([37.17648315, -3.59793711], 5);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+			document.getElementById("calcular").addEventListener("click", function() {
+				var destino = document.getElementById("otro").value;
+				if(destino.trim() !== ""){
+					fetch('/calcular-distancia', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded'
+						},
+						body: 'otro=' + encodeURIComponent(destino)
+					})
+						.then(response => response.json())
+						.then(data => {
+							console.log(data.status);
+							document.getElementById("mensaje").innerText = data.mensaje;
+
+							map.setView([data.latitud, data.longitud], 13);
+							L.marker([data.latitud, data.longitud]).addTo(map);
+						})
+						.catch(error => console.error('Error:', error));
+				}
+				else{
+					event.preventDefault(); // Evitar el envío del formulario
+					alert("Complete todos los campos requeridos.");
+				}
+			});
+			document.getElementById("otro").addEventListener("keypress", function(event) {
+				if (event.key === "Enter") {
+					if(this.value.trim() !== ""){
+						document.getElementById("calcular").click();
+					}
+					else{
+						event.preventDefault(); // Evitar el envío del formulario
+						alert("Complete todos los campos requeridos.");
+					}
+				}
+			});
+		</script>
+	</body>
+</html>
